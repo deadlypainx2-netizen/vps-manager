@@ -46,7 +46,6 @@ echo -e "${RED}3) Install Panel + Wings${NC}"
 echo -e "${RED}4) Create Admin User${NC}"
 echo -e "${RED}5) Wings Auto Config${NC}"
 echo -e "${RED}6) Install PufferPanel (NEW)${NC}"
-echo -e "${RED}7) NEOPLAYX VM Manager${NC}"
 echo -e "${RED}8) System Info${NC}"
 echo -e "${RED}9) Exit${NC}"
 
