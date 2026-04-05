@@ -1,23 +1,15 @@
-Bhai, script ko full Dark Red look dene ke liye maine ANSI colors ko optimize kar diya hai. Ab saare options, headers, aur loading effects ek hi aggressive red theme mein dikhengi.
-
-Maine kuch syntax errors bhi fix kiye hain (jaise PufferPanel menu option mein ek missing quote tha) taaki script crash na ho.
-
-Bash
 #!/bin/bash
 
-# ========== COLORS (Dark Red Theme) ==========
-RED='\033[0;31m'       # Standard Red
-BRED='\033[1;31m'      # Bold Red
-NC='\033[0m'           # No Color
-
-# Override other colors to Red
-GREEN='\033[0;31m'
-YELLOW='\033[0;31m'
-CYAN='\033[0;31m'
+# ========== COLORS ==========
+RED='\033[1;31m'
+GREEN='\033[1;32m'
+YELLOW='\033[1;33m'
+CYAN='\033[1;36m'
+NC='\033[0m'
 
 # ========== ROOT CHECK ==========
 if [ "$EUID" -ne 0 ]; then
-  echo -e "${BRED}❌ Please run as root!${NC}"
+  echo -e "${RED}❌ Please run as root!${NC}"
   exit
 fi
 
@@ -26,7 +18,7 @@ set -e
 
 # ========== LOADING ==========
 loading() {
-echo -ne "${RED}Processing"
+echo -ne "${YELLOW}Processing"
 for i in {1..5}; do
     echo -ne "."
     sleep 0.3
@@ -36,9 +28,9 @@ echo -e "${NC}"
 
 # ========== HEADER ==========
 clear
-echo -e "${BRED}"
+echo -e "${CYAN}"
 echo "========================================"
-echo "      🚀 NEOPLAYX INSTALLER 🚀"
+echo "     🚀 NEOPLAYX INSTALLER 🚀"
 echo "========================================"
 echo -e "${NC}"
 
@@ -48,19 +40,18 @@ echo -e "${RED}2) Install Wings${NC}"
 echo -e "${RED}3) Install Panel + Wings${NC}"
 echo -e "${RED}4) Create Admin User${NC}"
 echo -e "${RED}5) Wings Auto Config${NC}"
-echo -e "${RED}6) Install PufferPanel${NC}"
-echo -e "${RED}7) VPS CMD Tools${NC}"
+echo -e "${RED}6) Install PufferPanel (NEW)${NC}"
+echo -e "${RED}7) JLPG VM Manager${NC}"
 echo -e "${RED}8) System Info${NC}"
 echo -e "${RED}9) Exit${NC}"
 
 echo ""
-echo -ne "${BRED}👉 Select option [1-9]: ${NC}"
-read option
+read -p "👉 Select option [1-9]: " option
 
 # ========== PANEL INSTALL ==========
 install_panel() {
 loading
-echo -e "${RED}Installing Pterodactyl Panel...${NC}"
+echo -e "${CYAN}Installing Pterodactyl Panel...${NC}"
 
 apt update -y && apt upgrade -y
 apt install nginx mysql-server redis-server curl tar unzip git software-properties-common -y
@@ -131,13 +122,13 @@ EOF
 ln -s /etc/nginx/sites-available/pterodactyl.conf /etc/nginx/sites-enabled/
 systemctl restart nginx
 
-echo -e "${BRED}✅ Panel Installed Successfully!${NC}"
+echo -e "${GREEN}✅ Panel Installed Successfully!${NC}"
 }
 
 # ========== WINGS ==========
 install_wings() {
 loading
-echo -e "${RED}Installing Wings...${NC}"
+echo -e "${CYAN}Installing Wings...${NC}"
 
 curl -sSL https://get.docker.com/ | bash
 systemctl enable docker
@@ -163,51 +154,84 @@ Restart=always
 WantedBy=multi-user.target
 EOF
 
-systemctl daemon-reload
+systemctl daemon-reexec
 systemctl enable wings
 systemctl start wings
 
-echo -e "${BRED}✅ Wings Installed!${NC}"
-echo -e "${RED}⚠️ Config Panel se generate karke /etc/pterodactyl/config.yml me daalo${NC}"
+echo -e "${RED}✅ Wings Installed!${NC}"
+echo -e "${YELLOW}⚠️ Config Panel se generate karke /etc/pterodactyl/config.yml me daalo${NC}"
 }
 
 # ========== NEW PUFFER PANEL ==========
 install_puffer() {
 loading
-echo -e "${RED}Installing PufferPanel (NEW)...${NC}"
+echo -e "${CYAN}Installing PufferPanel (NEW)...${NC}"
 
-echo -ne "${BRED}Install PufferPanel? (y/n): ${NC}"
-read confirm
+read -p "Install PufferPanel? (y/n): " confirm
 if [[ $confirm != "y" ]]; then
-    echo -e "${RED}Cancelled${NC}"
+    echo "Cancelled"
     return
 fi
 
 bash <(curl -sSL https://raw.githubusercontent.com/MrRangerXD/puffer-panel/refs/heads/main/install)
 
-echo -e "${BRED}✅ PufferPanel Installed!${NC}"
+echo -e "${RED}✅ PufferPanel Installed!${NC}"
 echo -e "${RED}🌐 Open: http://YOUR_IP:8080${NC}"
 }
 
 # ========== SYSTEM INFO ==========
 system_info() {
-echo -e "${BRED}===== SYSTEM INFO =====${NC}"
-echo -e "${RED}OS:${NC} $(lsb_release -d | cut -f2)"
-echo -e "${RED}CPU:${NC} $(nproc) cores"
-echo -e "${RED}RAM:${NC} $(free -h | awk '/Mem:/ {print $2}')"
-echo -e "${RED}IP:${NC} $(curl -s ifconfig.me)"
+echo -e "${CYAN}===== SYSTEM INFO =====${NC}"
+echo -e "${GREEN}OS:${NC} $(lsb_release -d | cut -f2)"
+echo -e "${GREEN}CPU:${NC} $(nproc) cores"
+echo -e "${GREEN}RAM:${NC} $(free -h | awk '/Mem:/ {print $2}')"
+echo -e "${GREEN}IP:${NC} $(curl -s ifconfig.me)"
 }
 
 # ========== MENU CONTROL ==========
 case $option in
-1) install_panel ;;
-2) install_wings ;;
-3) install_panel; install_wings ;;
-4) cd /var/www/pterodactyl || exit; php artisan p:user:make ;;
-5) bash <(curl -s https://raw.githubusercontent.com/jlpggamerz/Wingcmd/refs/heads/main/install.sh) ;;
-6) install_puffer ;;
-7) bash <(curl -s https://raw.githubusercontent.com/jlpggamerz/Vps-cmd-code-/refs/heads/main/install.sh) ;;
-8) system_info ;;
-9) echo -e "${RED}Exiting...${NC}"; exit ;;
-*) echo -e "${RED}Invalid Option!${NC}" ;;
+
+1)
+install_panel
+;;
+
+2)
+install_wings
+;;
+
+3)
+install_panel
+install_wings
+;;
+
+4)
+cd /var/www/pterodactyl || exit
+php artisan p:user:make
+;;
+
+5)
+bash <(curl -s https://raw.githubusercontent.com/jlpggamerz/Wingcmd/refs/heads/main/install.sh)
+;;
+
+6)
+install_puffer
+;;
+
+7)
+bash <(curl -s https://raw.githubusercontent.com/jlpggamerz/Vps-cmd-code-/refs/heads/main/install.sh)
+;;
+
+8)
+system_info
+;;
+
+9)
+echo -e "${RED}Exiting...${NC}"
+exit
+;;
+
+*)
+echo -e "${RED}Invalid Option!${NC}"
+;;
+
 esac
