@@ -1,8 +1,3 @@
-Bilkul, maine script mein saare JLPG Ultimate references ko NEOPLAYX se replace kar diya hai aur header/menu ka primary colour Red kar diya hai.
-
-Yahan rahi aapki updated script:
-
-Bash
 #!/bin/bash
 
 # ========== COLORS ==========
@@ -23,7 +18,7 @@ set -e
 
 # ========== LOADING ==========
 loading() {
-echo -ne "${RED}Processing"
+echo -ne "${YELLOW}Processing"
 for i in {1..5}; do
     echo -ne "."
     sleep 0.3
@@ -33,22 +28,22 @@ echo -e "${NC}"
 
 # ========== HEADER ==========
 clear
-echo -e "${RED}"
+echo -e "${CYAN}"
 echo "========================================"
-echo "         🚀 NEOPLAYX INSTALLER 🚀       "
+echo "     🚀 NEO PLAYX INSTALLER 🚀"
 echo "========================================"
 echo -e "${NC}"
 
 # ========== MENU ==========
-echo -e "${RED}1) Install Pterodactyl Panel${NC}"
-echo -e "${RED}2) Install Wings${NC}"
-echo -e "${RED}3) Install Panel + Wings${NC}"
-echo -e "${RED}4) Create Admin User${NC}"
-echo -e "${RED}5) Wings Auto Config${NC}"
-echo -e "${GREEN}7) VPS INSTALLER${NC}"
-echo -e "${RED}6) Install PufferPanel (NEW)${NC}"
-echo -e "${RED}8) System Info${NC}"
-echo -e "${RED}9) Exit${NC}"
+echo -e "${GREEN}1) Install Pterodactyl Panel${NC}"
+echo -e "${GREEN}2) Install Wings${NC}"
+echo -e "${GREEN}3) Install Panel + Wings${NC}"
+echo -e "${GREEN}4) Create Admin User${NC}"
+echo -e "${GREEN}5) Wings Auto Config${NC}"
+echo -e "${GREEN}6) Install PufferPanel (NEW)${NC}"
+echo -e "${GREEN}7) VM Manager${NC}"
+echo -e "${GREEN}8) System Info${NC}"
+echo -e "${GREEN}9) Exit${NC}"
 
 echo ""
 read -p "👉 Select option [1-9]: " option
@@ -56,7 +51,7 @@ read -p "👉 Select option [1-9]: " option
 # ========== PANEL INSTALL ==========
 install_panel() {
 loading
-echo -e "${RED}Installing Pterodactyl Panel...${NC}"
+echo -e "${CYAN}Installing Pterodactyl Panel...${NC}"
 
 apt update -y && apt upgrade -y
 apt install nginx mysql-server redis-server curl tar unzip git software-properties-common -y
@@ -127,13 +122,13 @@ EOF
 ln -s /etc/nginx/sites-available/pterodactyl.conf /etc/nginx/sites-enabled/
 systemctl restart nginx
 
-echo -e "${RED}✅ Panel Installed Successfully!${NC}"
+echo -e "${GREEN}✅ Panel Installed Successfully!${NC}"
 }
 
 # ========== WINGS ==========
 install_wings() {
 loading
-echo -e "${RED}Installing Wings...${NC}"
+echo -e "${CYAN}Installing Wings...${NC}"
 
 curl -sSL https://get.docker.com/ | bash
 systemctl enable docker
@@ -163,14 +158,14 @@ systemctl daemon-reexec
 systemctl enable wings
 systemctl start wings
 
-echo -e "${RED}✅ Wings Installed!${NC}"
+echo -e "${GREEN}✅ Wings Installed!${NC}"
 echo -e "${YELLOW}⚠️ Config Panel se generate karke /etc/pterodactyl/config.yml me daalo${NC}"
 }
 
 # ========== NEW PUFFER PANEL ==========
 install_puffer() {
 loading
-echo -e "${RED}Installing PufferPanel (NEW)...${NC}"
+echo -e "${CYAN}Installing PufferPanel (NEW)...${NC}"
 
 read -p "Install PufferPanel? (y/n): " confirm
 if [[ $confirm != "y" ]]; then
@@ -180,17 +175,17 @@ fi
 
 bash <(curl -sSL https://raw.githubusercontent.com/MrRangerXD/puffer-panel/refs/heads/main/install)
 
-echo -e "${RED}✅ PufferPanel Installed!${NC}"
+echo -e "${GREEN}✅ PufferPanel Installed!${NC}"
 echo -e "${YELLOW}🌐 Open: http://YOUR_IP:8080${NC}"
 }
 
 # ========== SYSTEM INFO ==========
 system_info() {
-echo -e "${RED}===== SYSTEM INFO =====${NC}"
-echo -e "${RED}OS:${NC} $(lsb_release -d | cut -f2)"
-echo -e "${RED}CPU:${NC} $(nproc) cores"
-echo -e "${RED}RAM:${NC} $(free -h | awk '/Mem:/ {print $2}')"
-echo -e "${RED}IP:${NC} $(curl -s ifconfig.me)"
+echo -e "${CYAN}===== SYSTEM INFO =====${NC}"
+echo -e "${GREEN}OS:${NC} $(lsb_release -d | cut -f2)"
+echo -e "${GREEN}CPU:${NC} $(nproc) cores"
+echo -e "${GREEN}RAM:${NC} $(free -h | awk '/Mem:/ {print $2}')"
+echo -e "${GREEN}IP:${NC} $(curl -s ifconfig.me)"
 }
 
 # ========== MENU CONTROL ==========
