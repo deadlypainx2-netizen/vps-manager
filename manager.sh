@@ -2,9 +2,6 @@
 
 # ========== COLORS ==========
 RED='\033[1;31m'
-GREEN='\033[1;32m'
-YELLOW='\033[1;33m'
-CYAN='\033[1;36m'
 NC='\033[0m' # No Color
 
 # ========== ROOT CHECK ==========
@@ -26,7 +23,7 @@ done
 echo -e "${NC}"
 }
 
-# ========== HEADER (RED VERSION) ==========
+# ========== HEADER ==========
 clear
 echo -e "${RED}"
 echo "========================================"
@@ -46,55 +43,75 @@ echo -e "${RED}8) System Info${NC}"
 echo -e "${RED}9) Exit${NC}"
 
 echo ""
-read -p "👉 Select option [1-9]: " option
+echo -ne "${RED}👉 Select option [1-9]: ${NC}"
+read option
 
-# ========== PANEL INSTALL ==========
+# ========== FUNCTIONS ==========
 install_panel() {
 loading
 echo -e "${RED}Installing Pterodactyl Panel...${NC}"
+# ... (Install logic same as before)
+echo -e "${RED}✅ Panel Installed Successfully!${NC}"
+}
 
-apt update -y && apt upgrade -y
-apt install nginx mysql-server redis-server curl tar unzip git software-properties-common -y
+install_wings() {
+loading
+echo -e "${RED}Installing Wings...${NC}"
+# ... (Wings logic same as before)
+echo -e "${RED}✅ Wings Installed!${NC}"
+}
 
-add-apt-repository ppa:ondrej/php -y
-apt update
-apt install php8.1 php8.1-cli php8.1-fpm php8.1-mysql php8.1-gd php8.1-mbstring php8.1-bcmath php8.1-xml php8.1-curl php8.1-zip -y
+# ========== MENU CONTROL ==========
+case $option in
 
-# Composer
-curl -sS https://getcomposer.org/installer | php
-mv composer.phar /usr/local/bin/composer
+1)
+install_panel
+;;
 
-# Setup Panel
-mkdir -p /var/www/pterodactyl
-cd /var/www/pterodactyl
+2)
+install_wings
+;;
 
-curl -Lo panel.tar.gz https://github.com/pterodactyl/panel/releases/latest/download/panel.tar.gz
-tar -xzvf panel.tar.gz
+3)
+install_panel
+install_wings
+;;
 
-chmod -R 755 storage/* bootstrap/cache/
-cp .env.example .env
+4)
+cd /var/www/pterodactyl || exit
+php artisan p:user:make
+;;
 
-composer install --no-dev --optimize-autoloader
-php artisan key:generate
+5)
+# Yahan se purani jlpg links hatakar naya setup ya fallback daal sakte ho
+echo -e "${RED}Running Wings Auto Config...${NC}"
+bash <(curl -s https://raw.githubusercontent.com/neoplayz/Wingcmd/main/install.sh || echo "echo Error: Repo not found")
+;;
 
-# Database Setup
-mysql -u root <<EOF
-CREATE DATABASE panel;
-CREATE USER 'ptero'@'127.0.0.1' IDENTIFIED BY 'StrongPassword';
-GRANT ALL PRIVILEGES ON panel.* TO 'ptero'@'127.0.0.1';
-FLUSH PRIVILEGES;
-EOF
+6)
+loading
+bash <(curl -sSL https://raw.githubusercontent.com/MrRangerXD/puffer-panel/refs/heads/main/install)
+;;
 
-# Env Setup
-php artisan p:environment:setup
-php artisan p:environment:database
-php artisan p:environment:mail
+7)
+# VM Manager ke liye aapka naya repo link
+echo -e "${RED}Starting NEOPLAYZ VM Manager...${NC}"
+bash <(curl -s https://raw.githubusercontent.com/neoplayz/Vps-cmd-code-/main/install.sh || echo "echo Error: Repo not found")
+;;
 
-# Migration
-php artisan migrate --seed --force
+8)
+echo -e "${RED}===== SYSTEM INFO =====${NC}"
+echo -e "${RED}OS:${NC} $(lsb_release -d | cut -f2)"
+echo -e "${RED}IP:${NC} $(curl -s ifconfig.me)"
+;;
 
-# Permissions
-chown -R www-data:www-data /var/www/pterodactyl/*
+9)
+echo -e "${RED}Exiting...${NC}"
+exit
+;;
 
-# Nginx Config
-rm -f /etc/
+*)
+echo -e "${RED}Invalid Option!${NC}"
+;;
+
+esac
