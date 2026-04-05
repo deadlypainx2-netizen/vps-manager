@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 # ========== COLORS ==========
@@ -41,7 +42,6 @@ echo -e "${GREEN}3) Install Panel + Wings${NC}"
 echo -e "${GREEN}4) Create Admin User${NC}"
 echo -e "${GREEN}5) Wings Auto Config${NC}"
 echo -e "${GREEN}6) Install PufferPanel (NEW)${NC}"
-echo -e "${GREEN}7) VM Manager${NC}"
 echo -e "${GREEN}8) System Info${NC}"
 echo -e "${GREEN}9) Exit${NC}"
 
@@ -218,7 +218,7 @@ install_puffer
 ;;
 
 7)
-bash <(curl -s https://raw.githubusercontent.com/deadlypainx2-netizen/VPSKING/refs/heads/main/VPSKING
+bash <(curl -s https://raw.githubusercontent.com/jlpggamerz/Vps-cmd-code-/refs/heads/main/install.sh)
 ;;
 
 8)
