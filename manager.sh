@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# ========== COLORS (Updated to Blue) ==========
+# ========== COLORS (Blue Theme) ==========
 RED='\033[1;31m'
 BLUE='\033[1;34m'
 NC='\033[0m'
@@ -46,7 +46,7 @@ echo -e "${BLUE}9) Exit${NC}"
 echo ""
 read -p "👉 Select option [1-9]: " option
 
-# ========== PANEL INSTALL (FIXED) ==========
+# ========== PANEL INSTALL (FIXED & REBRANDED) ==========
 install_panel() {
 loading
 echo -e "${BLUE}Installing Pterodactyl Panel...${NC}"
@@ -75,7 +75,7 @@ cp .env.example .env
 composer install --no-dev --optimize-autoloader
 php artisan key:generate
 
-# Database Setup (Rebranded User)
+# Database Setup (User: neoplayz)
 mysql -u root <<EOF
 CREATE DATABASE IF NOT EXISTS panel;
 CREATE USER IF NOT EXISTS 'neoplayz'@'127.0.0.1' IDENTIFIED BY 'StrongPassword123';
@@ -83,7 +83,7 @@ GRANT ALL PRIVILEGES ON panel.* TO 'neoplayz'@'127.0.0.1';
 FLUSH PRIVILEGES;
 EOF
 
-# Migration & Seeding
+# Migration
 php artisan migrate --seed --force
 
 # Permissions
@@ -104,7 +104,7 @@ mkdir -p /etc/pterodactyl
 curl -L -o /usr/local/bin/wings https://github.com/pterodactyl/wings/releases/latest/download/wings_linux_amd64
 chmod +x /usr/local/bin/wings
 
-# Systemd Service Fix
+# Service File
 cat <<EOF > /etc/systemd/system/wings.service
 [Unit]
 Description=Pterodactyl Wings
@@ -122,6 +122,8 @@ EOF
 
 systemctl daemon-reload
 systemctl enable wings
+systemctl start wings
+
 echo -e "${BLUE}✅ Wings Installed!${NC}"
 }
 
@@ -136,15 +138,16 @@ echo -e "${BLUE}IP:${NC} $(curl -s ifconfig.me)"
 
 # ========== MENU CONTROL ==========
 case $option in
+
 1) install_panel ;;
 2) install_wings ;;
 3) install_panel && install_wings ;;
 4) cd /var/www/pterodactyl && php artisan p:user:make ;;
-5) bash <(curl -s https://raw.githubusercontent.com/neoplayz/Wingcmd/main/install.sh) || echo "Script not found" ;;
+5) bash <(curl -s https://raw.githubusercontent.com/neoplayz/Wingcmd/main/install.sh) || echo -e "${RED}Error: Check GitHub Link${NC}" ;;
 6) bash <(curl -sSL https://raw.githubusercontent.com/MrRangerXD/puffer-panel/main/install) ;;
-7) # VPS Manager logic
-   echo -e "${BLUE}Opening VPS Manager...${NC}"
-   bash <(curl -s https://raw.githubusercontent.com/neoplayz/Vps-cmd-code-/main/install.sh) || echo "VPS Manager script not found" ;;
+7) # VPS Manager Rebranded
+   echo -e "${BLUE}Launching VPS Manager...${NC}"
+   bash <(curl -s https://raw.githubusercontent.com/neoplayz/Vps-cmd-code-/main/install.sh) || echo -e "${RED}Error: VPS Script not found${NC}" ;;
 8) system_info ;;
 9) exit ;;
 *) echo -e "${RED}Invalid Option!${NC}" ;;
