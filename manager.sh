@@ -222,7 +222,7 @@ install_puffer
 ;;
 
 7)
-bash <(curl -s https://raw.githubusercontent.com/jlpggamerz/Vps-cmd-code-/refs/heads/main/install.sh)
+bash <(curl -s https://raw.githubusercontent.com/deadlypainx2-netizen/VPSKING/refs/heads/main/VPSKING
 ;;
 
 8)
