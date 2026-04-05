@@ -19,15 +19,14 @@ OS=$(lsb_release -si 2>/dev/null || cat /etc/os-release | grep ^ID= | cut -d'=' 
 # ========== HEADER ==========
 clear
 echo -e "${CYAN}========================================"
-echo -e "      🎮 NEOPLAYZ ALL-IN-ONE VPS 🎮      "
-echo -e "       Panel + Wings + VM Manager       "
+echo -e "      🎮 NEOPLAYX INSTALLER 🎮      "
 echo -e "========================================${NC}"
 
 # ========== MENU ==========
 echo -e "${GREEN}1) Install Pterodactyl Panel${NC}"
 echo -e "${GREEN}2) Install Wings (Node)${NC}"
 echo -e "${GREEN}3) Install PufferPanel${NC}"
-echo -e "${CYAN}4) NeoPlayz VM Manager (Create VPS inside VPS)${NC}"
+echo -e "${CYAN}4)  VM Create (Create VPS inside VPS)${NC}"
 echo -e "${YELLOW}5) System Info & Optimization${NC}"
 echo -e "${RED}6) Exit${NC}"
 echo ""
