@@ -32,7 +32,7 @@ echo -e "${NC}"
 clear
 echo -e "${RED}"
 echo "========================================"
-echo "      NEOPLAYX INSTALLER "
+echo "     🚀 NEOPLAYX INSTALLER 🚀"
 echo "========================================"
 echo -e "${NC}"
 
@@ -42,7 +42,7 @@ echo -e "${RED}2) Install Wings${NC}"
 echo -e "${RED}3) Install Panel + Wings${NC}"
 echo -e "${RED}4) Create Admin User${NC}"
 echo -e "${RED}5) Wings Auto Config${NC}"
-echo -e "${RED}6) Install PufferPanel${NC}"
+echo -e "${RED}6) Install PufferPanel${NC}
 echo -e "${RED}9) Exit${NC}"
 
 echo ""
@@ -102,3 +102,136 @@ rm -f /etc/nginx/sites-enabled/default
 cat <<EOF > /etc/nginx/sites-available/pterodactyl.conf
 server {
     listen 80;
+    server_name _;
+
+    root /var/www/pterodactyl/public;
+    index index.php;
+
+    location / {
+        try_files \$uri \$uri/ /index.php?\$query_string;
+    }
+
+    location ~ \.php$ {
+        fastcgi_pass unix:/run/php/php8.1-fpm.sock;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
+    }
+}
+EOF
+
+ln -s /etc/nginx/sites-available/pterodactyl.conf /etc/nginx/sites-enabled/
+systemctl restart nginx
+
+echo -e "${RED}✅ Panel Installed Successfully!${NC}"
+}
+
+# ========== WINGS ==========
+install_wings() {
+loading
+echo -e "${RED}Installing Wings...${NC}"
+
+curl -sSL https://get.docker.com/ | bash
+systemctl enable docker
+systemctl start docker
+
+mkdir -p /etc/pterodactyl
+
+curl -L -o /usr/local/bin/wings https://github.com/pterodactyl/wings/releases/latest/download/wings_linux_amd64
+chmod +x /usr/local/bin/wings
+
+cat <<EOF > /etc/systemd/system/wings.service
+[Unit]
+Description=Pterodactyl Wings
+After=docker.service
+
+[Service]
+User=root
+WorkingDirectory=/etc/pterodactyl
+ExecStart=/usr/local/bin/wings
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl daemon-reexec
+systemctl enable wings
+systemctl start wings
+
+echo -e "${RED}✅ Wings Installed!${NC}"
+echo -e "${RED}⚠️ Config Panel se generate karke /etc/pterodactyl/config.yml me daalo${NC}"
+}
+
+# ========== NEW PUFFER PANEL ==========
+install_puffer() {
+loading
+echo -e "${RED}Installing PufferPanel (NEW)...${NC}"
+
+read -p "Install PufferPanel? (y/n): " confirm
+if [[ $confirm != "y" ]]; then
+    echo -e "${RED}Cancelled${NC}"
+    return
+fi
+
+bash <(curl -sSL https://raw.githubusercontent.com/MrRangerXD/puffer-panel/refs/heads/main/install)
+
+echo -e "${RED}✅ PufferPanel Installed!${NC}"
+echo -e "${RED}🌐 Open: http://YOUR_IP:8080${NC}"
+}
+
+# ========== SYSTEM INFO ==========
+system_info() {
+echo -e "${RED}===== SYSTEM INFO =====${NC}"
+echo -e "${RED}OS:${NC} $(lsb_release -d | cut -f2)"
+echo -e "${RED}CPU:${NC} $(nproc) cores"
+echo -e "${RED}RAM:${NC} $(free -h | awk '/Mem:/ {print $2}')"
+echo -e "${RED}IP:${NC} $(curl -s ifconfig.me)"
+}
+
+# ========== MENU CONTROL ==========
+case $option in
+
+1)
+install_panel
+;;
+
+2)
+install_wings
+;;
+
+3)
+install_panel
+install_wings
+;;
+
+4)
+cd /var/www/pterodactyl || exit
+php artisan p:user:make
+;;
+
+5)
+bash <(curl -s https://raw.githubusercontent.com/jlpggamerz/Wingcmd/refs/heads/main/install.sh)
+;;
+
+6)
+install_puffer
+;;
+
+7)
+bash <(curl -s https://raw.githubusercontent.com/jlpggamerz/Vps-cmd-code-/refs/heads/main/install.sh)
+;;
+
+8)
+system_info
+;;
+
+9)
+echo -e "${RED}Exiting...${NC}"
+exit
+;;
+
+*)
+echo -e "${RED}Invalid Option!${NC}"
+;;
+
+esac
