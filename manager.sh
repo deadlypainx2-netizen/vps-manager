@@ -1,233 +1,238 @@
 #!/bin/bash
-set -euo pipefail
 
-# =============================
-# Enhanced Multi-VM Manager
-# =============================
+# ========== COLORS ==========
+RED='\033[1;31m'
+GREEN='\033[1;32m'
+YELLOW='\033[1;33m'
+CYAN='\033[1;36m'
+BLUE='\033[1;34m' # Naya blue color option
+NC='\033[0m'
 
-# Function to display header
-display_header() {
-    clear
-    cat << "EOF"
-========================================================================
-Sponsor By These Guys!                                                                  
-NEOPLAYZ
-========================================================================
+# ========== ROOT CHECK ==========
+if [ "$EUID" -ne 0 ]; then
+  echo -e "${RED}❌ Please run as root!${NC}"
+  exit
+fi
+
+# Stop on error
+set -e
+
+# ========== LOADING ==========
+loading() {
+echo -ne "${BLUE}Processing" # Yellow se blue
+for i in {1..5}; do
+    echo -ne "."
+    sleep 0.3
+done
+echo -e "${NC}"
+}
+
+# ========== HEADER ==========
+clear
+echo -e "${BLUE}" # Cyan se blue
+echo "========================================"
+echo "         🚀 NEOPLAYZ INSTALLER 🚀"
+echo "========================================"
+echo -e "${NC}"
+
+# ========== MENU ==========
+echo -e "${BLUE}1) Install Pterodactyl Panel${NC}" # Green se blue
+echo -e "${BLUE}2) Install Wings${NC}"               # Green se blue
+echo -e "${BLUE}3) Install Panel + Wings${NC}"        # Green se blue
+echo -e "${BLUE}4) Create Admin User${NC}"             # Green se blue
+echo -e "${BLUE}5) Wings Auto Config${NC}"             # Green se blue
+echo -e "${BLUE}6) Install PufferPanel (NEW)${NC}"      # Green se blue
+echo -e "${BLUE}7) VPS Manager${NC}"                # NEOPLAYZ VM Manager se VPS Manager, Green se blue
+echo -e "${BLUE}8) System Info${NC}"                  # Green se blue
+echo -e "${BLUE}9) Exit${NC}"                         # Green se blue
+
+echo ""
+read -p "👉 Select option [1-9]: " option
+
+# ========== PANEL INSTALL ==========
+install_panel() {
+loading
+echo -e "${BLUE}Installing Pterodactyl Panel...${NC}" # Cyan se blue
+
+apt update -y && apt upgrade -y
+apt install nginx mysql-server redis-server curl tar unzip git software-properties-common -y
+
+add-apt-repository ppa:ondrej/php -y
+apt update
+apt install php8.1 php8.1-cli php8.1-fpm php8.1-mysql php8.1-gd php8.1-mbstring php8.1-bcmath php8.1-xml php8.1-curl php8.1-zip -y
+
+# Composer
+curl -sS https://getcomposer.org/installer | php
+mv composer.phar /usr/local/bin/composer
+
+# Setup Panel
+mkdir -p /var/www/pterodactyl
+cd /var/www/pterodactyl
+
+curl -Lo panel.tar.gz https://github.com/pterodactyl/panel/releases/latest/download/panel.tar.gz
+tar -xzvf panel.tar.gz
+
+chmod -R 755 storage/* bootstrap/cache/
+cp .env.example .env
+
+composer install --no-dev --optimize-autoloader
+php artisan key:generate
+
+# Database Setup
+mysql -u root <<EOF
+CREATE DATABASE panel;
+CREATE USER 'ptero'@'127.0.0.1' IDENTIFIED BY 'StrongPassword';
+GRANT ALL PRIVILEGES ON panel.* TO 'ptero'@'127.0.0.1';
+FLUSH PRIVILEGES;
 EOF
-    echo
-}
 
-# Function to display colored output
-print_status() {
-    local type=$1
-    local message=$2
-    
-    case $type in
-        "INFO") echo -e "\033[1;34m[INFO]\033[0m $message" ;;
-        "WARN") echo -e "\033[1;33m[WARN]\033[0m $message" ;;
-        "ERROR") echo -e "\033[1;31m[ERROR]\033[0m $message" ;;
-        "SUCCESS") echo -e "\033[1;32m[SUCCESS]\033[0m $message" ;;
-        "INPUT") echo -e "\033[1;36m[INPUT]\033[0m $message" ;;
-        *) echo "[$type] $message" ;;
-    esac
-}
+# Env Setup
+php artisan p:environment:setup
+php artisan p:environment:database
+php artisan p:environment:mail
 
-# Function to validate input
-validate_input() {
-    local type=$1
-    local value=$2
-    
-    case $type in
-        "number")
-            if ! [[ "$value" =~ ^[0-9]+$ ]]; then
-                print_status "ERROR" "Must be a number"
-                return 1
-            fi
-            ;;
-        "size")
-            if ! [[ "$value" =~ ^[0-9]+[GgMm]$ ]]; then
-                print_status "ERROR" "Must be a size with unit (e.g., 100G, 512M)"
-                return 1
-            fi
-            ;;
-        "port")
-            if ! [[ "$value" =~ ^[0-9]+$ ]] || [ "$value" -lt 23 ] || [ "$value" -gt 65535 ]; then
-                print_status "ERROR" "Must be a valid port number (23-65535)"
-                return 1
-            fi
-            ;;
-        "name")
-            if ! [[ "$value" =~ ^[a-zA-Z0-9_-]+$ ]]; then
-                print_status "ERROR" "VM name can only contain letters, numbers, hyphens, and underscores"
-                return 1
-            fi
-            ;;
-        "username")
-            if ! [[ "$value" =~ ^[a-z_][a-z0-9_-]*$ ]]; then
-                print_status "ERROR" "Username must start with a letter or underscore, and contain only letters, numbers, hyphens, and underscores"
-                return 1
-            fi
-            ;;
-    esac
-    return 0
-}
+# Migration
+php artisan migrate --seed --force
 
-# Function to check dependencies
-check_dependencies() {
-    local deps=("qemu-system-x86_64" "wget" "cloud-localds" "qemu-img")
-    local missing_deps=()
-    
-    for dep in "${deps[@]}"; do
-        if ! command -v "$dep" &> /dev/null; then
-            missing_deps+=("$dep")
-        fi
-    done
-    
-    if [ ${#missing_deps[@]} -ne 0 ]; then
-        print_status "ERROR" "Missing dependencies: ${missing_deps[*]}"
-        print_status "INFO" "On Ubuntu/Debian, try: sudo apt install qemu-system cloud-image-utils wget"
-        exit 1
-    fi
-}
+# Permissions
+chown -R www-data:www-data /var/www/pterodactyl/*
 
-# Function to cleanup temporary files
-cleanup() {
-    if [ -f "user-data" ]; then rm -f "user-data"; fi
-    if [ -f "meta-data" ]; then rm -f "meta-data"; fi
-}
+# Nginx Config
+rm -f /etc/nginx/sites-enabled/default
 
-# Function to get all VM configurations
-get_vm_list() {
-    find "$VM_DIR" -name "*.conf" -exec basename {} .conf \; 2>/dev/null | sort
-}
+cat <<EOF > /etc/nginx/sites-available/pterodactyl.conf
+server {
+    listen 80;
+    server_name _;
 
-# Function to load VM configuration
-load_vm_config() {
-    local vm_name=$1
-    local config_file="$VM_DIR/$vm_name.conf"
-    
-    if [[ -f "$config_file" ]]; then
-        # Clear previous variables
-        unset VM_NAME OS_TYPE CODENAME IMG_URL HOSTNAME USERNAME PASSWORD
-        unset DISK_SIZE MEMORY CPUS SSH_PORT GUI_MODE PORT_FORWARDS IMG_FILE SEED_FILE CREATED
-        
-        source "$config_file"
-        return 0
-    else
-        print_status "ERROR" "Configuration for VM '$vm_name' not found"
-        return 1
-    fi
-}
+    root /var/www/pterodactyl/public;
+    index index.php;
 
-# Function to save VM configuration
-save_vm_config() {
-    local config_file="$VM_DIR/$VM_NAME.conf"
-    
-    cat > "$config_file" <<EOF
-VM_NAME="$VM_NAME"
-OS_TYPE="$OS_TYPE"
-CODENAME="$CODENAME"
-IMG_URL="$IMG_URL"
-HOSTNAME="$HOSTNAME"
-USERNAME="$USERNAME"
-PASSWORD="$PASSWORD"
-DISK_SIZE="$DISK_SIZE"
-MEMORY="$MEMORY"
-CPUS="$CPUS"
-SSH_PORT="$SSH_PORT"
-GUI_MODE="$GUI_MODE"
-PORT_FORWARDS="$PORT_FORWARDS"
-IMG_FILE="$IMG_FILE"
-SEED_FILE="$SEED_FILE"
-CREATED="$CREATED"
+    location / {
+        try_files \$uri \$uri/ /index.php?\$query_string;
+    }
+
+    location ~ \.php$ {
+        fastcgi_pass unix:/run/php/php8.1-fpm.sock;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
+    }
+}
 EOF
-    
-    print_status "SUCCESS" "Configuration saved to $config_file"
+
+ln -s /etc/nginx/sites-available/pterodactyl.conf /etc/nginx/sites-enabled/
+systemctl restart nginx
+
+echo -e "${BLUE}✅ Panel Installed Successfully!${NC}" # Green se blue
 }
 
-# Function to create new VM
-create_new_vm() {
-    print_status "INFO" "Creating a new VM"
-    
-    # OS Selection
-    print_status "INFO" "Select an OS to set up:"
-    local os_options=()
-    local i=1
-    for os in "${!OS_OPTIONS[@]}"; do
-        echo "  $i) $os"
-        os_options[$i]="$os"
-        ((i++))
-    done
-    
-    while true; do
-        read -p "$(print_status "INPUT" "Enter your choice (1-${#OS_OPTIONS[@]}): ")" choice
-        if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le ${#OS_OPTIONS[@]} ]; then
-            local os="${os_options[$choice]}"
-            IFS='|' read -r OS_TYPE CODENAME IMG_URL DEFAULT_HOSTNAME DEFAULT_USERNAME DEFAULT_PASSWORD <<< "${OS_OPTIONS[$os]}"
-            break
-        else
-            print_status "ERROR" "Invalid selection. Try again."
-        fi
-    done
+# ========== WINGS ==========
+install_wings() {
+loading
+echo -e "${BLUE}Installing Wings...${NC}" # Cyan se blue
 
-    # Custom Inputs with validation
-    while true; do
-        read -p "$(print_status "INPUT" "Enter VM name (default: $DEFAULT_HOSTNAME): ")" VM_NAME
-        VM_NAME="${VM_NAME:-$DEFAULT_HOSTNAME}"
-        if validate_input "name" "$VM_NAME"; then
-            # Check if VM name already exists
-            if [[ -f "$VM_DIR/$VM_NAME.conf" ]]; then
-                print_status "ERROR" "VM with name '$VM_NAME' already exists"
-            else
-                break
-            fi
-        fi
-    done
+curl -sSL https://get.docker.com/ | bash
+systemctl enable docker
+systemctl start docker
 
-    while true; do
-        read -p "$(print_status "INPUT" "Enter hostname (default: $VM_NAME): ")" HOSTNAME
-        HOSTNAME="${HOSTNAME:-$VM_NAME}"
-        if validate_input "name" "$HOSTNAME"; then
-            break
-        fi
-    done
+mkdir -p /etc/pterodactyl
 
-    while true; do
-        read -p "$(print_status "INPUT" "Enter username (default: $DEFAULT_USERNAME): ")" USERNAME
-        USERNAME="${USERNAME:-$DEFAULT_USERNAME}"
-        if validate_input "username" "$USERNAME"; then
-            break
-        fi
-    done
+curl -L -o /usr/local/bin/wings https://github.com/pterodactyl/wings/releases/latest/download/wings_linux_amd64
+chmod +x /usr/local/bin/wings
 
-    while true; do
-        read -s -p "$(print_status "INPUT" "Enter password (default: $DEFAULT_PASSWORD): ")" PASSWORD
-        PASSWORD="${PASSWORD:-$DEFAULT_PASSWORD}"
-        echo
-        if [ -n "$PASSWORD" ]; then
-            break
-        else
-            print_status "ERROR" "Password cannot be empty"
-        fi
-    done
+cat <<EOF > /etc/systemd/system/wings.service
+[Unit]
+Description=Pterodactyl Wings
+After=docker.service
 
-    while true; do
-        read -p "$(print_status "INPUT" "Disk size (default: 20G): ")" DISK_SIZE
-        DISK_SIZE="${DISK_SIZE:-20G}"
-        if validate_input "size" "$DISK_SIZE"; then
-            break
-        fi
-    done
+[Service]
+User=root
+WorkingDirectory=/etc/pterodactyl
+ExecStart=/usr/local/bin/wings
+Restart=always
 
-    while true; do
-        read -p "$(print_status "INPUT" "Memory in MB (default: 2048): ")" MEMORY
-        MEMORY="${MEMORY:-2048}"
-        if validate_input "number" "$MEMORY"; then
-            break
-        fi
-    done
+[Install]
+WantedBy=multi-user.target
+EOF
 
-    while true; do
-        read -p "$(print_status "INPUT" "Number of CPUs (default: 2): ")" CPUS
-        CPUS="${CPUS:-2}"
-        if validate_input "number"
+systemctl daemon-reexec
+systemctl enable wings
+systemctl start wings
+
+echo -e "${BLUE}✅ Wings Installed!${NC}" # Green se blue
+echo -e "${BLUE}⚠️ Config Panel se generate karke /etc/pterodactyl/config.yml me daalo${NC}" # Yellow se blue
+}
+
+# ========== NEW PUFFER PANEL ==========
+install_puffer() {
+loading
+echo -e "${BLUE}Installing PufferPanel (NEW)...${NC}" # Cyan se blue
+
+read -p "Install PufferPanel? (y/n): " confirm
+if [[ $confirm != "y" ]]; then
+    echo "Cancelled"
+    return
+fi
+
+bash <(curl -sSL https://raw.githubusercontent.com/MrRangerXD/puffer-panel/refs/heads/main/install)
+
+echo -e "${BLUE}✅ PufferPanel Installed!${NC}" # Green se blue
+echo -e "${BLUE}🌐 Open: http://YOUR_IP:8080${NC}" # Yellow se blue
+}
+
+# ========== SYSTEM INFO ==========
+system_info() {
+echo -e "${BLUE}===== SYSTEM INFO =====${NC}" # Cyan se blue
+echo -e "${BLUE}OS:${NC} $(lsb_release -d | cut -f2)" # Green se blue
+echo -e "${BLUE}CPU:${NC} $(nproc) cores" # Green se blue
+echo -e "${BLUE}RAM:${NC} $(free -h | awk '/Mem:/ {print $2}')" # Green se blue
+echo -e "${BLUE}IP:${NC} $(curl -s ifconfig.me)" # Green se blue
+}
+
+# ========== MENU CONTROL ==========
+case $option in
+
+1)
+install_panel
+;;
+
+2)
+install_wings
+;;
+
+3)
+install_panel
+install_wings
+;;
+
+4)
+cd /var/www/pterodactyl || exit
+php artisan p:user:make
+;;
+
+5)
+bash <(curl -s https://raw.githubusercontent.com/jlpggamerz/Wingcmd/refs/heads/main/install.sh)
+;;
+
+6)
+install_puffer
+;;
+
+7)
+bash <(curl -s https://raw.githubusercontent.com/jlpggamerz/Vps-cmd-code-/refs/heads/main/install.sh)
+;;
+
+8)
+system_info
+;;
+
+9)
+echo -e "${RED}Exiting...${NC}"
+exit
+;;
+
+*)
+echo -e "${RED}Invalid Option!${NC}"
+;;
+
+esac
