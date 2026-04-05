@@ -61,7 +61,9 @@ case $option in
         add-apt-repository ppa:ondrej/php -y && apt update
         apt install php8.1 php8.1-cli php8.1-fpm php8.1-mysql php8.1-gd php8.1-mbstring php8.1-bcmath php8.1-xml php8.1-curl php8.1-zip -y
         echo -e "${RED}✅ Panel Base Ready!${NC}"
-        sleep 2; menu ;;
+        sleep 2
+        menu
+        ;;
     2)
         header
         curl -sSL https://get.docker.com/ | bash
@@ -70,17 +72,22 @@ case $option in
         curl -L -o /usr/local/bin/wings https://github.com/pterodactyl/wings/releases/latest/download/wings_linux_amd64
         chmod +x /usr/local/bin/wings
         echo -e "${RED}✅ Wings Installed!${NC}"
-        sleep 2; menu ;;
+        sleep 2
+        menu
+        ;;
     3)
         if [ -d "/var/www/pterodactyl" ]; then
             cd /var/www/pterodactyl && php artisan p:user:make
         else
             echo -e "${RED}❌ Panel Not Found!${NC}"
         fi
-        sleep 2; menu ;;
+        sleep 2
+        menu
+        ;;
     4)
         bash <(curl -sL https://data.pufferpanel.com/install.sh)
-        menu ;;
+        menu
+        ;;
     5)
         header
         echo -e "${RED}🚀 Launching NeoPlayz VM Engine...${NC}"
@@ -94,12 +101,16 @@ case $option in
         echo -e "CPU: $(nproc) Cores"
         echo -e "RAM: $(free -h | awk '/Mem:/ {print $2}')"
         echo -e "IP: $(curl -s ifconfig.me)"
+        echo ""
         read -p "Press Enter to return..."
-        menu ;;
+        menu
+        ;;
     0)
-        exit 0 ;;
+        exit 0
+        ;;
     *)
-        menu ;;
+        menu
+        ;;
 esac
 }
 
